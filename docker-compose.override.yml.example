@@ -1,0 +1,37 @@
+# Example override file for local development
+# Copy to docker-compose.override.yml and customize as needed
+# docker-compose.override.yml is automatically loaded and gitignored
+
+services:
+  postgis:
+    # Expose PostgreSQL port for local development
+    ports:
+      - "5432:5432"
+    # Increase shared memory for better performance
+    shm_size: 1gb
+    # Custom PostgreSQL configuration
+    # command:
+    #   - postgres
+    #   - -c
+    #   - shared_buffers=2GB
+    #   - -c
+    #   - work_mem=128MB
+    #   - -c
+    #   - maintenance_work_mem=512MB
+  
+  api:
+    # Enable hot reload for development
+    volumes:
+      - ./api/src:/app/src:ro
+    environment:
+      - NODE_ENV=development
+    # Override command for development
+    # command: ["npm", "run", "dev"]
+  
+  tileserver:
+    # Additional environment variables
+    environment:
+      - VERBOSE=1
+    # Expose additional ports if needed
+    # ports:
+    #   - "8082:8080"

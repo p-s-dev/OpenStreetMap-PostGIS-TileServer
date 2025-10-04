@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ArcGIS Maps SDK - OSM Vector Tiles Example</title>
+  
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.28/"></script>
+  
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+    #info {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      padding: 10px;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      max-width: 300px;
+      z-index: 99;
+    }
+  </style>
+  
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/VectorTileLayer"
+    ], function(Map, MapView, VectorTileLayer) {
+      
+      // Note: For vector tiles, you may need to use MapLibre GL JS instead
+      // as ArcGIS VectorTileLayer expects ESRI vector tile format
+      // This example shows the approach, but for full compatibility,
+      // consider using the raster tile approach (webtile-layer.html)
+      
+      // Create vector tile layer (if your tiles are in ESRI format)
+      const osmVectorLayer = new VectorTileLayer({
+        // This URL should point to your style.json
+        url: "http://localhost:8081/styles/basic/style.json",
+        
+        copyright: "© OpenStreetMap contributors"
+      });
+      
+      const map = new Map({
+        basemap: {
+          baseLayers: [osmVectorLayer]
+        }
+      });
+      
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [-98.5795, 39.8283],
+        zoom: 4
+      });
+      
+      view.when(() => {
+        console.log("Map view loaded");
+      }).catch((error) => {
+        console.error("Error loading vector tiles:", error);
+        alert("Vector tiles may not be compatible. Try the raster tile example instead.");
+      });
+      
+    });
+  </script>
+</head>
+<body>
+  <div id="viewDiv"></div>
+  <div id="info">
+    <h3>OSM Vector Tiles Example</h3>
+    <p><strong>Note:</strong> Vector tiles may require MapLibre GL JS for full compatibility with OpenMapTiles format.</p>
+    <p>For better compatibility with ArcGIS Maps SDK, use the raster tile example (WebTileLayer).</p>
+  </div>
+</body>
+</html>

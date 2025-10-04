@@ -24,6 +24,7 @@ pnpm-debug.log*
 
 # Environment overrides
 .env.local
+docker-compose.override.yml
 
 # IDE and editor files
 .vscode/
