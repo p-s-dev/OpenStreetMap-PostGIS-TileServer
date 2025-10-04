@@ -1,0 +1,35 @@
+{
+  "options": {
+    "paths": {
+      "root": "",
+      "fonts": "/styles/fonts",
+      "sprites": "/styles/sprites",
+      "styles": "/styles",
+      "mbtiles": "/data"
+    },
+    "serveAllFonts": true,
+    "serveAllStyles": true,
+    "serveStaticMaps": true
+  },
+  "styles": {
+    "basic": {
+      "style": "basic.json",
+      "tilejson": {
+        "type": "overlay",
+        "bounds": [-180, -85.0511, 180, 85.0511]
+      }
+    }
+  },
+  "data": {
+    "v3": {
+      "mbtiles": "us-latest.mbtiles",
+      "tilejson": {
+        "type": "baselayer",
+        "format": "pbf",
+        "bounds": [-180, -85.0511, 180, 85.0511],
+        "minzoom": 0,
+        "maxzoom": 14
+      }
+    }
+  }
+}

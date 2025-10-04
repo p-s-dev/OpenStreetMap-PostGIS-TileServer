@@ -1,0 +1,12 @@
+tileset:
+  name: OpenStreetMap
+  version: 1.0.0
+  id: osm
+  description: OpenStreetMap vector tiles
+  attribution: © OpenStreetMap contributors
+  center: [-98.5795, 39.8283, 4]
+  bounds: [-180, -85.0511, 180, 85.0511]
+  minzoom: 0
+  maxzoom: 14
+  pixel_scale: 256
+  layers: []

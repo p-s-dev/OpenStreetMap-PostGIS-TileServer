@@ -1,0 +1,104 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: osm-postgis
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - osm-network
+
+  imposm:
+    image: openmaptiles/import-osm:3.0.1
+    container_name: osm-imposm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    volumes:
+      - ./data:/data
+      - ./openmaptiles:/mapping
+      - ./scripts:/scripts
+    depends_on:
+      postgis:
+        condition: service_healthy
+    networks:
+      - osm-network
+    profiles:
+      - import
+
+  openmaptiles-tools:
+    image: openmaptiles/openmaptiles-tools:7.4
+    container_name: osm-mbtiles-generator
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      MIN_ZOOM: ${MIN_ZOOM:-0}
+      MAX_ZOOM: ${MAX_ZOOM:-14}
+      BBOX: ${BBOX}
+    volumes:
+      - ./data:/data
+      - ./openmaptiles:/tileset
+      - ./scripts:/scripts
+    depends_on:
+      postgis:
+        condition: service_healthy
+    networks:
+      - osm-network
+    profiles:
+      - mbtiles
+
+  tileserver:
+    image: maptiler/tileserver-gl:v4.6.5
+    container_name: osm-tileserver
+    volumes:
+      - ./data:/data
+      - ./tileserver/config.json:/config/config.json
+      - ./tileserver/styles:/styles
+    ports:
+      - "${TILESERVER_PORT}:8080"
+    command: --config /config/config.json
+    networks:
+      - osm-network
+    profiles:
+      - serve
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: osm-api
+    environment:
+      UPSTREAM_TILESERVER: http://tileserver:8080
+      PORT: 8080
+    ports:
+      - "${API_PORT}:8080"
+    depends_on:
+      - tileserver
+    networks:
+      - osm-network
+    profiles:
+      - serve
+
+networks:
+  osm-network:
+    driver: bridge
+
+volumes:
+  pgdata:

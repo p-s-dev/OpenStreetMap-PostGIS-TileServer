@@ -1,0 +1,52 @@
+{
+  "name": "OpenStreetMap PostGIS TileServer",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20",
+      "nodeGypDependencies": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.makefile-tools"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  },
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@latest --activate && cd api && pnpm install",
+  "forwardPorts": [8080, 8081, 5432],
+  "portsAttributes": {
+    "8080": {
+      "label": "API (CORS-enabled XYZ)",
+      "onAutoForward": "notify"
+    },
+    "8081": {
+      "label": "TileServer GL",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL/PostGIS",
+      "onAutoForward": "silent"
+    }
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "remoteUser": "vscode"
+}
