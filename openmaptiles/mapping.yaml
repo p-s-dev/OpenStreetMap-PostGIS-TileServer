@@ -1,0 +1,286 @@
+# OpenMapTiles-compatible imposm3 mapping
+# This is a simplified mapping for basic OSM features
+
+tables:
+  # Roads and highways
+  osm_roads:
+    type: linestring
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: highway
+      key: highway
+      type: string
+    - name: ref
+      key: ref
+      type: string
+    - name: surface
+      key: surface
+      type: string
+    - name: oneway
+      key: oneway
+      type: bool
+    - name: bridge
+      key: bridge
+      type: bool
+    - name: tunnel
+      key: tunnel
+      type: bool
+    - name: layer
+      key: layer
+      type: integer
+    - name: geometry
+      type: geometry
+    mapping:
+      highway:
+      - motorway
+      - trunk
+      - primary
+      - secondary
+      - tertiary
+      - unclassified
+      - residential
+      - service
+      - motorway_link
+      - trunk_link
+      - primary_link
+      - secondary_link
+      - tertiary_link
+      - living_street
+      - pedestrian
+      - track
+      - road
+      - footway
+      - path
+      - cycleway
+
+  # Buildings
+  osm_buildings:
+    type: polygon
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: building
+      key: building
+      type: string
+    - name: building_levels
+      key: building:levels
+      type: integer
+    - name: height
+      key: height
+      type: string
+    - name: geometry
+      type: geometry
+    mapping:
+      building:
+      - __any__
+
+  # Water features
+  osm_water:
+    type: polygon
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: water
+      key: water
+      type: string
+    - name: waterway
+      key: waterway
+      type: string
+    - name: natural
+      key: natural
+      type: string
+    - name: geometry
+      type: geometry
+    mapping:
+      natural:
+      - water
+      - wetland
+      water:
+      - __any__
+      waterway:
+      - riverbank
+      - dock
+
+  # Waterways (linear water features)
+  osm_waterways:
+    type: linestring
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: waterway
+      key: waterway
+      type: string
+    - name: geometry
+      type: geometry
+    mapping:
+      waterway:
+      - river
+      - canal
+      - stream
+      - ditch
+      - drain
+
+  # Land use / land cover
+  osm_landuse:
+    type: polygon
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: landuse
+      key: landuse
+      type: string
+    - name: natural
+      key: natural
+      type: string
+    - name: leisure
+      key: leisure
+      type: string
+    - name: geometry
+      type: geometry
+    mapping:
+      landuse:
+      - residential
+      - commercial
+      - industrial
+      - retail
+      - farmland
+      - forest
+      - grass
+      - meadow
+      - orchard
+      - vineyard
+      - cemetery
+      natural:
+      - wood
+      - grassland
+      - scrub
+      - heath
+      leisure:
+      - park
+      - garden
+      - playground
+      - pitch
+      - golf_course
+
+  # Places (cities, towns, villages)
+  osm_places:
+    type: point
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: place
+      key: place
+      type: string
+    - name: population
+      key: population
+      type: integer
+    - name: capital
+      key: capital
+      type: string
+    - name: geometry
+      type: geometry
+    mapping:
+      place:
+      - country
+      - state
+      - city
+      - town
+      - village
+      - hamlet
+      - suburb
+      - neighbourhood
+      - isolated_dwelling
+
+  # Points of interest
+  osm_pois:
+    type: point
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: amenity
+      key: amenity
+      type: string
+    - name: shop
+      key: shop
+      type: string
+    - name: tourism
+      key: tourism
+      type: string
+    - name: leisure
+      key: leisure
+      type: string
+    - name: geometry
+      type: geometry
+    mapping:
+      amenity:
+      - restaurant
+      - cafe
+      - bar
+      - pub
+      - fast_food
+      - bank
+      - hospital
+      - school
+      - university
+      - pharmacy
+      - fuel
+      - parking
+      - post_office
+      - police
+      - fire_station
+      shop:
+      - __any__
+      tourism:
+      - hotel
+      - motel
+      - hostel
+      - museum
+      - attraction
+      - information
+      leisure:
+      - park
+      - playground
+      - sports_centre
+
+  # Administrative boundaries
+  osm_admin:
+    type: polygon
+    columns:
+    - name: osm_id
+      type: id
+    - name: name
+      key: name
+      type: string
+    - name: admin_level
+      key: admin_level
+      type: integer
+    - name: boundary
+      key: boundary
+      type: string
+    - name: geometry
+      type: geometry
+    mapping:
+      boundary:
+      - administrative

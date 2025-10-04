@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>MapLibre GL JS - OSM Vector Tiles Example</title>
+  
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+    #info {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      padding: 10px;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      max-width: 300px;
+      z-index: 99;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info">
+    <h3>MapLibre GL JS</h3>
+    <p>Vector tiles from local OpenStreetMap server</p>
+    <p><strong>Tile URL:</strong><br>
+    <code>http://localhost:8080/tiles/{z}/{x}/{y}.pbf</code></p>
+  </div>
+  
+  <script>
+    // Create map with vector tiles from local server
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'http://localhost:8081/styles/basic/style.json',
+      center: [-98.5795, 39.8283], // Center of USA
+      zoom: 4
+    });
+    
+    // Add navigation controls
+    map.addControl(new maplibregl.NavigationControl());
+    
+    // Add scale control
+    map.addControl(new maplibregl.ScaleControl({
+      maxWidth: 200,
+      unit: 'imperial'
+    }));
+    
+    // Log when map is loaded
+    map.on('load', () => {
+      console.log('Map loaded successfully');
+      console.log('Using vector tiles from:', 'http://localhost:8080/tiles/{z}/{x}/{y}.pbf');
+    });
+    
+    // Handle errors
+    map.on('error', (e) => {
+      console.error('Map error:', e);
+    });
+  </script>
+</body>
+</html>

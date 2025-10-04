@@ -1,0 +1,69 @@
+name: Validate Configuration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Validate docker-compose.yml
+      run: |
+        docker compose config --quiet
+        echo "✓ docker-compose.yml is valid"
+    
+    - name: Validate JSON files
+      run: |
+        for file in tileserver/config.json tileserver/styles/basic.json api/package.json api/tsconfig.json .devcontainer/devcontainer.json; do
+          echo "Validating $file..."
+          cat "$file" | python3 -m json.tool > /dev/null
+          echo "✓ $file is valid"
+        done
+    
+    - name: Validate YAML files
+      run: |
+        pip install pyyaml
+        python3 -c "import yaml; yaml.safe_load(open('openmaptiles/mapping.yaml'))"
+        echo "✓ mapping.yaml is valid"
+        python3 -c "import yaml; yaml.safe_load(open('openmaptiles/openmaptiles.yaml'))"
+        echo "✓ openmaptiles.yaml is valid"
+    
+    - name: Check shell scripts syntax
+      run: |
+        for script in scripts/*.sh; do
+          echo "Checking $script..."
+          bash -n "$script"
+          echo "✓ $script syntax is valid"
+        done
+    
+    - name: Validate Makefile
+      run: |
+        make -n help > /dev/null
+        echo "✓ Makefile is valid"
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Validate TypeScript
+      run: |
+        cd api
+        npm install
+        npx tsc --noEmit
+        echo "✓ TypeScript compiles without errors"
+    
+    - name: Build API Docker image
+      run: |
+        docker build -t osm-tile-api:test ./api
+        echo "✓ API Docker image builds successfully"
