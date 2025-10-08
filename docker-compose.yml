@@ -42,7 +42,7 @@ services:
       - import
 
   openmaptiles-tools:
-    image: openmaptiles/openmaptiles-tools:7.4
+    image: openmaptiles/openmaptiles-tools:7.2
     container_name: osm-mbtiles-generator
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -53,6 +53,7 @@ services:
       MIN_ZOOM: ${MIN_ZOOM:-0}
       MAX_ZOOM: ${MAX_ZOOM:-14}
       BBOX: ${BBOX}
+      MBTILES_PATH: ${MBTILES_PATH}
     volumes:
       - ./data:/data
       - ./openmaptiles:/tileset
