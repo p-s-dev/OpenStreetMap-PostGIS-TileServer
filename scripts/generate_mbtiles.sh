@@ -49,7 +49,7 @@ if [ -n "${BBOX}" ]; then
 fi
 
 # Create output directory if it doesn't exist
-mkdir -p "$(dirname ${MBTILES_PATH})"
+mkdir -p "$(dirname "${MBTILES_PATH}")"
 
 # Generate tiles using openmaptiles-tools
 cd /tileset
@@ -64,46 +64,85 @@ if [ -f "/tileset/openmaptiles.yaml" ] && [ -d "/tileset/layers" ]; then
     "${TILESET_FILE}" \
     "${MBTILES_PATH}"
 else
-  # Fallback: Use tilelive-copy or tilemaker approach
-  echo "Using simple tile generation approach..."
-  
-  # Use tippecanoe if available to generate from PostGIS
-  if command -v tippecanoe &> /dev/null; then
-    echo "Using tippecanoe for tile generation..."
-    
-    # Export data from PostGIS to GeoJSON and pipe to tippecanoe
-    psql "${DATABASE_URL}" -t -c "SELECT json_build_object(
-      'type', 'FeatureCollection',
-      'features', json_agg(ST_AsGeoJSON(t.*)::json)
-    ) FROM (SELECT * FROM public.osm_roads LIMIT 10000) AS t;" | \
-    tippecanoe \
-      -o "${MBTILES_PATH}" \
-      -z "${MAX_ZOOM:-14}" \
-      -Z "${MIN_ZOOM:-0}" \
-      -f \
-      -l osm
-  else
-    # Ultimate fallback: create empty MBTiles
-    echo "Creating placeholder MBTiles..."
-    echo "Note: For production use, please use OpenMapTiles with proper configuration"
-    
-    sqlite3 "${MBTILES_PATH}" <<SQL
-CREATE TABLE metadata (name text, value text);
-INSERT INTO metadata VALUES('name', 'OpenStreetMap');
-INSERT INTO metadata VALUES('type', 'baselayer');
-INSERT INTO metadata VALUES('version', '1.0.0');
-INSERT INTO metadata VALUES('description', 'OpenStreetMap tiles');
-INSERT INTO metadata VALUES('format', 'pbf');
-INSERT INTO metadata VALUES('minzoom', '${MIN_ZOOM:-0}');
-INSERT INTO metadata VALUES('maxzoom', '${MAX_ZOOM:-14}');
-INSERT INTO metadata VALUES('bounds', '-180,-85.0511,180,85.0511');
-INSERT INTO metadata VALUES('center', '-98.5795,39.8283,4');
+  # Fallback: Use tippecanoe to build a lightweight tileset from imposm output
+  echo "Using imposm tables with tippecanoe..."
 
-CREATE TABLE tiles (zoom_level integer, tile_column integer, tile_row integer, tile_data blob);
-CREATE UNIQUE INDEX tile_index on tiles (zoom_level, tile_column, tile_row);
-SQL
-    echo "Placeholder MBTiles created. Import data first for actual tiles."
+  if ! command -v tippecanoe &> /dev/null; then
+    echo "ERROR: tippecanoe is not available in this environment." >&2
+    echo "Install tippecanoe or provide an OpenMapTiles configuration." >&2
+    exit 1
   fi
+
+  if ! command -v ogr2ogr &> /dev/null; then
+    echo "ERROR: ogr2ogr (GDAL) is required to export data from PostGIS." >&2
+    exit 1
+  fi
+
+  OGR_CONN="PG:host=${POSTGRES_HOST} port=${POSTGRES_PORT} dbname=${POSTGRES_DB} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD}"
+
+  SPAT_ARGS=()
+  if [ -n "${BBOX}" ]; then
+    IFS=',' read -r BBOX_MIN_LON BBOX_MIN_LAT BBOX_MAX_LON BBOX_MAX_LAT <<< "${BBOX}"
+    echo "Applying spatial filter: ${BBOX_MIN_LON},${BBOX_MIN_LAT},${BBOX_MAX_LON},${BBOX_MAX_LAT}"
+    SPAT_ARGS=(-spat "${BBOX_MIN_LON}" "${BBOX_MIN_LAT}" "${BBOX_MAX_LON}" "${BBOX_MAX_LAT}")
+  fi
+
+  TMP_EXPORT_DIR="$(mktemp -d)"
+  trap 'rm -rf "${TMP_EXPORT_DIR}"' EXIT
+
+  declare -A LAYER_TABLES=(
+    [water]="osm_osm_water"
+    [waterways]="osm_osm_waterways"
+    [landuse]="osm_osm_landuse"
+    [roads]="osm_osm_roads"
+    [buildings]="osm_osm_buildings"
+    [places]="osm_osm_places"
+    [pois]="osm_osm_pois"
+    [admin]="osm_osm_admin"
+  )
+
+  TIPPECANOE_LAYERS=()
+  DATA_FOUND=0
+
+  for LAYER in "${!LAYER_TABLES[@]}"; do
+    TABLE_NAME="${LAYER_TABLES[${LAYER}]}"
+
+    TABLE_EXISTS=$(psql "${DATABASE_URL}" -Atc "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '${TABLE_NAME}');")
+    if [ "${TABLE_EXISTS}" != "t" ]; then
+      echo "Skipping layer '${LAYER}' (missing table public.${TABLE_NAME})."
+      continue
+    fi
+
+    echo "Exporting layer '${LAYER}' from table public.${TABLE_NAME}..."
+
+    OUTPUT_PATH="${TMP_EXPORT_DIR}/${LAYER}.geojsonseq"
+    if ogr2ogr -f GeoJSONSeq "${OUTPUT_PATH}" "${OGR_CONN}" "public.${TABLE_NAME}" "${SPAT_ARGS[@]}" -nln "${LAYER}" -t_srs EPSG:4326 -lco RFC7946=YES >"${TMP_EXPORT_DIR}/${LAYER}_ogr2ogr.log" 2>&1; then
+      if [ -s "${OUTPUT_PATH}" ]; then
+        TIPPECANOE_LAYERS+=(-L "${LAYER}:${OUTPUT_PATH}")
+        DATA_FOUND=1
+      else
+        echo "Layer '${LAYER}' did not produce any features."
+      fi
+    else
+      echo "WARNING: Failed to export layer '${LAYER}'. ogr2ogr output:" >&2
+      cat "${TMP_EXPORT_DIR}/${LAYER}_ogr2ogr.log" >&2 || true
+    fi
+  done
+
+  if [ "${DATA_FOUND}" -eq 0 ]; then
+    echo "ERROR: No data exported from imposm tables. Cannot build MBTiles." >&2
+    exit 1
+  fi
+
+  echo "Generating MBTiles with tippecanoe..."
+  tippecanoe \
+    -o "${MBTILES_PATH}" \
+    -Z "${MIN_ZOOM:-0}" \
+    -z "${MAX_ZOOM:-14}" \
+    --force \
+    --drop-densest-as-needed \
+    --extend-zooms-if-still-dropping \
+    "${TIPPECANOE_LAYERS[@]}"
 fi
 
 echo "=== MBTiles generation completed! ==="
