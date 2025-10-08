@@ -294,6 +294,12 @@ docker compose exec postgis psql -U osm -d osm -c "\dt"
 ls -lh data/*.mbtiles
 ```
 
+If you are using the default imposm3 import without a full OpenMapTiles schema, the `generate_mbtiles.sh` script now exports the
+imposm tables with **GDAL/ogr2ogr** and builds a lightweight vector tile set with **tippecanoe**. Make sure the
+`openmaptiles-tools` image (or your environment) includes these utilities. The fallback tileset bundles layers such as roads,
+buildings, water, landuse, places, POIs, and administrative boundaries directly from the imposm output. The script will abort
+with an error if no data can be exported instead of silently producing an empty placeholder MBTiles file.
+
 ### API Returns 502 Bad Gateway
 
 ```bash
